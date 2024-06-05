@@ -12,10 +12,12 @@ adb shell pm list packages
 
 Second use the app name in the script
 
+For PowerShell:
 ```powershell
 .\extract.ps1 com.app.name
 ```
 
+For Bash:
 ```bash
 ./extract.sh com.app.name
 ```
