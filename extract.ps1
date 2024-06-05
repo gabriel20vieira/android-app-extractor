@@ -33,6 +33,16 @@ function ExtractDataFrom {
 
     adb shell "su 0 tar -cvzf $save_to $path" *>$null
     adb pull $save_to *>$null
+    
+    Write-Host -NoNewline Extracting
+    Do {
+        Write-Host -NoNewline . 
+        Start-Sleep -Seconds 1
+    } until (Test-Path $zip_name -ErrorAction SilentlyContinue -PathType Leaf)
+    
+    Write-Host "" 
+    Get-FileHash -Algorithm MD5 $zip_name | Format-List > ($zip_name + ".md5")
+    Get-FileHash -Algorithm SHA256 $zip_name | Format-List > ($zip_name + ".sha256")
 }
 
 function ExtractFolderExists {

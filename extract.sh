@@ -37,6 +37,16 @@ function extract_data_from {
 
     adb shell "su 0 tar -cvzf $save_to $path" >/dev/null
     adb pull $save_to >/dev/null
+    
+    echo -n "Extracting"
+    while [ ! -f "$zip_name" ]; do
+        echo -n "."
+        sleep 1
+    done
+    
+    echo ""
+    md5sum $zip_name > "${zip_name}.md5"
+    sha256sum $zip_name >> "${zip_name}.sha256"
 }
 
 function extract_folder_exists {
