@@ -27,18 +27,25 @@ function Wait-EnterKey {
 function ExtractDataFrom {
     param ($path)
     
-    $app_path = $path + "/" + $application + "/"
     $timestamp = Get-Date -Format "yyyyMMddHHmmss"
     $zip_name = $timestamp + $path.replace('/', '.') + $application + ".tgz"
     $save_to = "/sdcard/Download/" + $zip_name
 
-    adb shell "su 0 tar -cvzf $save_to $app_path" *>$null
+    adb shell "su 0 tar -cvzf $save_to $path" *>$null
     adb pull $save_to *>$null
 }
 
 function ExtractFolderExists {
     param ($path)
     if ((adb shell "if test -d $path; then echo 'exist'; fi")) {
+        RETURN $true
+    }
+    RETURN $false
+}
+
+function ExtractFileExists {
+    param ($path)
+    if ((adb shell "if test -f $path; then echo 'exist'; fi")) {
         RETURN $true
     }
     RETURN $false
@@ -54,19 +61,21 @@ function CanExtractPermissions {
 
 function ExtractSuite {
     Param($location)
-    $extractFolder = $location
-    $canExtract = CanExtractPermissions($extractFolder)
-    $folderExists = ExtractFolderExists($extractFolder)
+    $canExtract = CanExtractPermissions($location)
+    $existsFolder = ExtractFolderExists($location)
+    $existsFile = ExtractFileExists($location)
     
     Write-Host ""
-    Write-Host -NoNewline "Folder`t`t"
-    Write-Host $extractFolder
+    Write-Host -NoNewline "Object`t`t"
+    Write-Host $location
     Write-Host -NoNewline "Exists`t`t"
-    if ($folderExists) { Write-Host -ForegroundColor Green "Yes" } else { Write-Host -ForegroundColor Red "No" }
+    if ($existsFolder -or $existsFile) { Write-Host -ForegroundColor Green "Yes" } else { Write-Host -ForegroundColor Red "No" }
     Write-Host -NoNewline "Permission`t"
     if ($canExtract) { Write-Host -ForegroundColor Green "Yes" } else { Write-Host -ForegroundColor Red "No" }
 
-    ExtractDataFrom($extractFolder)
+    if (($existsFolder -or $existsFile) -and $canExtract) {
+        ExtractDataFrom($location)
+    }
 
     Write-Host -NoNewline "Extracted`t"
     if ($canExtract) { Write-Host -ForegroundColor Green "Yes" } else { Write-Host -ForegroundColor Red "No" }
@@ -91,9 +100,15 @@ If (Test-CommandExists($adb_exec)) {
 
     Write-Host "Starting extration ..."
 
-    ExtractSuite("/data/data")
-    ExtractSuite("/data/user_de/0")
-    ExtractSuite("/data/user/0")
+    ExtractSuite("/data/data/$application/")
+    ExtractSuite("/data/user_de/0/$application/")
+    ExtractSuite("/data/user/0/$application/")
+    
+    $base_apk = adb shell "su 0 find /data/app/ | grep $application | grep base.apk"
+    if ($base_apk) {
+        ExtractSuite($base_apk)
+    }
+    
 
 }
 else {
